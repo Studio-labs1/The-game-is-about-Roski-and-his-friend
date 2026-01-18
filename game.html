@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Мой питомец Роски</title>
+  <style>
+    body {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      text-align: center;
+      background-color: #ffebcd;
+      margin: 0;
+      padding: 20px;
+    }
+    #game-container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: white;
+      border-radius: 15px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+    }
+    #pet {
+      font-size: 100px;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.3s, filter 0.3s;
+    }
+    #pet:hover {
+      filter: brightness(90%);
+    }
+    .stats {
+      display: flex;
+      justify-content: space-around;
+      margin: 20px 0;
+      flex-wrap: wrap;
+    }
+    .stat-item {
+      background-color: #fff8dc;
+      padding: 12px;
+      border-radius: 8px;
+      min-width: 140px;
+      margin: 5px;
+      text-align: center;
+    }
+    .stat-label {
+      font-weight: bold;
+      color: #8b4513;
+    }
+    .stat-value {
+      font-size: 18px;
+      margin-top: 4px;
+    }
+    #shop, #medical {
+      margin: 20px 0;
+      text-align: left;
+    }
+    .item-box {
+      padding: 12px;
+      margin: 8px 0;
+      background-color: #ffe4b5;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    button {
+      padding: 8px 12px;
+      font-size: 14px;
+      background-color: #ff6347;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #e0553d;
+    }
+    .disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    .emotion {
+      font-size: 24px;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <h1>Роски 🐕</h1>
+    
+    <div id="pet">🐕</div>
+    <div class="emotion" id="emotion">😊</div>
+
+    <div class="stats">
+      <div class="stat-item">
+        <div class="stat-label">Монеты</div>
+        <div class="stat-value" id="coins">100 000</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">Сытость</div>
+        <div class="stat-value" id="fullness">50/100</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">Настроение</div>
+        <div class="stat-value" id="mood">75/100</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">Здоровье</div>
+        <div class="stat-value" id="health">90/100</div>
+      </div>
+    </div>
+
+    <div id="shop">
+      <h3>Магазин еды:</h3>
+      <div class="item-box">
+        <span>🍖 Мясо (100 монет) +20 сытости</span>
+        <button onclick="buyFood(100, 20)">Купить</button>
+      </div>
+      <div class="item-box">
+        <span>🥩 Стейк (500 монет) +50 сытости</span>
+        <button onclick="buyFood(500, 50)">Купить</button>
+      </div>
+      <div class="item-box">
+        <span>🎂 Торт (1 000 монет) +80 сытости, +10 настроения</span>
+        <button onclick="buyFood(1000, 80, 10)">Купить</button>
+      </div>
+    </div>
+
+    <div id="medical">
+      <h3>Аптека:</h3>
+      <div class="item-box">
+        <span>💊 Таблетки (300 монет) +20 здоровья</span>
+        <button onclick="buyMedicine(300, 20)">Купить</button>
+      </div>
+      <div class="item-box">
+        <span>🩹 Пластырь (200 монет) +15 здоровья, +10 настроения</span>
+        <button onclick="buyMedicine(200, 15, 10)">Купить</button>
+      </div>
+      <div class="item-box">
+        <span>🏥 Лечение у врача (1 500 монет) +50 здоровья, +30 настроения</span>
+        <button onclick="buyMedicine(1500, 50, 30)">Купить</button>
+      </div>
+    </div>
+
+    <div style="margin: 20px 0;">
+      <button onclick="feedPet()">Покормить</button>
+      <button onclick="playWithPet()">Поиграть</button>
+      <button onclick="resetGame()">Начать заново</button>
+    </div>
+  </div>
+
+  <script>
+    // Элементы интерфейса
+    const petEl = document.getElementById('pet');
+    const emotionEl = document.getElementById('emotion');
+    const coinsEl = document.getElementById('coins');
+    const fullnessEl = document.getElementById('fullness');
+    const moodEl = document.getElementById('mood');
+    const healthEl = document.getElementById('health');
+
+    // Игровые переменные
+    let gameData = {
+      coins: 100000,
+      fullness: 50,
+      mood: 75,
+      health: 90
+    };
+
+    // Загрузка из localStorage при старте
+    function loadGame() {
+      const saved = localStorage.getItem('petGame');
+      if (saved) {
+        gameData = JSON.parse(saved);
+      }
+      updateUI();
+    }
+
+    // Сохранение в localStorage
+    function saveGame() {
+      localStorage.setItem('petGame', JSON.stringify(gameData));
+    }
+
+    // Обновление интерфейса
+    function updateUI() {
+      coinsEl.textContent = gameData.coins.toLocaleString('ru-RU');
+      fullnessEl.textContent = `${gameData.fullness}/100`;
+      moodEl.textContent = `${gameData.mood}/100`;
+      healthEl.textContent = `${gameData.health}/100`;
+
+      updatePetEmoji();
+      updateEmotion();
+    }
+
+    // Обновляем внешний вид питомца
+    function updatePetEmoji() {
+      if (gameData.health < 30) {
+        petEl.textContent = '😷';
+      } else if (gameData.fullness < 20) {
+        petEl.textContent = '😖';
+      } else if (gameData.mood < 30) {
+        petEl.textContent = '😢';
+      } else if (gameData.fullness >= 80 && gameData.mood >= 80) {
+        petEl.textContent = '🐕‍🦺';
+      } else {
+        petEl.textContent = '🐕';
+      }
+    }
+
+    // Обновляем эмоцию над питомцем
+    function updateEmotion() {
+      if (gameData.health < 20) {
+        emotionEl.textContent = '🤒';
+      } else if (gameData.mood < 20) {
+        emotionEl.textContent = '😭';
+      } else if (gameData.fullness < 20) {
+        emotionEl.textContent = '😫';
+      } else if (gameData.health >= 80 && gameData.mood >= 80 && gameData.fullness >= 80) {
+        emotionEl.textContent = '😍';
+      } else if (gameData.health >= 60 && gameData.mood >= 60 && gameData.fullness >= 60) {
+        emotionEl.textContent = '😊';
+      } else {
+        emotionEl.textContent = '🙂';
+      }
+    }
+
+    // Покупка еды
+    function buyFood(price, fullnessValue, moodValue = 0) {
+      if (gameData.coins < price) {
+        alert('Не хватает монет!');
+        return;
+      }
+
+      gameData.coins -= price;
+      gameData.fullness = Math.min(100, gameData.fullness + fullnessValue);
+      gameData.mood = Math.min(100, gameData.mood + moodValue);
+
+      updateUI();
+      saveGame();
+      showActionAnimation();
+    }
+
+    // Покупка лекарств
+    function buyMedicine(price, healthValue, moodValue = 0) {
+      if (gameData.coins < price) {
+        alert('Не хватает монет!');
+        return;
+      }
+
+      gameData.coins -= price;
+      gameData.health = Math.min(100, gameData.health + healthValue);
+      gameData.mood = Math.min(100, gameData.mood + moodValue);
+
+      updateUI();
+      saveGame();
+      showActionAnimation();
+    }
+
+    // Покормить питомца
+    function feedPet() {
+      if (gameData.fullness >= 100) {
+        alert('Питомец уже сыт!');
+        return;
+      }
+
+      gameData.fullness = Math.min(100, gameData.fullness + 15);
+      gameData.mood = Math.min(100, gameData.mood + 5);
+
+      updateUI();
+      saveGame();
+      showActionAnimation();
+    }
+
+    // Поиграть с питомцем
+    function playWithPet() {
+      if (gameData.health < 40) {
+        alert('Питомец слишком болен для игр!');
+        return;
+      }
+
+      gameData.mood = Math.min(100, gameData.mood + 20);
+      gameData.health = Math.max(0, gameData.health - 5); // небольшая усталость
+
+      updateUI();
+      saveGame();
+      showActionAnimation('🎉');
+    }
+
+    // Анимация действия
+    function showActionAnimation(emoji = '✨') {
+      const animEl = document.createElement('div');
+      animEl.style.position = 'absolute';
+      animEl.style.top = '50%';
+      animEl.style.left = '50%';
+      animEl.style.transform = 'translate(-50%, -50%)';
+      animEl.style.fontSize = '40px';
+      animEl.style.pointerEvents = 'none';
+      animEl.style.zIndex = '1000';
+      animEl.style.color = '#ff69b4';
+      animEl.textContent = emoji;
+      document.body.appendChild(animEl);
+
+      setTimeout(() => {
+        animEl.remove();
+      }, 1000);
+    }
+
+    // Начать заново
+    function resetGame() {
+      gameData.coins = 100000;
+      gameData.fullness = 50;
+      gameData.mood = 75;
+      gameData.health = 90;
+
+      updateUI();
+      saveGame();
+    }
+
+    // Периодическое ухудшение параметров (имитация времени)
+    setInterval(() => {
+      gameData.fullness = Math.max(0, gameData.fullness - 1);
+      gameData.mood = Math.max(0, gameData.mood - 0.5);
+      
+      // Вероятность ухудшения здоровья (болезнь)
+      if (Math.random() < 0.05 && gameData.health > 0) {
+        gameData.health = Math.max(0, gameData.health - 2);
+      }
+      
+      updateUI();
+      saveGame();
+    }, 30000); // каждые 30 секунд
+
+    // Инициализация
+    loadGame();
+  </script>
+</body>
+</html>
